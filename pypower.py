@@ -101,18 +101,22 @@ class Files:
 class GUI:
     class CustomTk:
         def sync_entry_with_label(entry, label):
-            var = _ctk.StringVar()
+            var = ctk.StringVar()
             var.trace_add('write', lambda *args:label.configure(text=entry.get()))
             entry.configure(textvariable=var)
-        def console_nums(master, per_row=3, entry_to_insert=None, font=('arial', 20), text_color='white'):
+        def console(master, texts, per_row=3, entry_to_insert=None, font=('arial', 20), text_color='white', return_dic_frame_and_buttons=False):
             result = _ctk.CTkFrame(master)
             def create_button(text):
                 if entry_to_insert:
                     return _ctk.CTkButton(result, text=text, font=font, text_color=text_color, command=lambda: entry_to_insert.insert('end', text))
                 return _ctk.CTkButton(result, text=text, font=font, text_color=text_color)
-            buttons = [create_button(str(n)) for n in range(10)]
+            buttons = [create_button(str(c)) for c in texts]
             GUI.CustomTk.tidy_up(buttons, per_row=per_row)
+            if return_dic_frame_and_buttons:
+                return {'frame': result, 'buttons': buttons}
             return result
+        def console_num(master, per_row=3, entry_to_insert=None, font=('arial', 20), text_color='white'):
+            return GUI.CustomTk.console(master, range(10), per_row, entry_to_insert, font=font, text_color=text_color)
         class Timer:
             def __init__(self, duration, obj, start_icon='start', stop_icon='stop', when_finish=None):
                 self.duration = duration
