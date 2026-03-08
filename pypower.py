@@ -9,9 +9,9 @@ import random as _random
 class Time:
     def random_time(method=12, with_sec=True):
         if method == 12:
-            hours = [n for n in range(1, 13)]
+            hours = list(range(1, 13))
         else:
-            hours = [n for n in range(24)]
+            hours = list(range(24))
         result = f"{_random.choice(hours):02}:{_random.randint(0, 59):02}"
         if with_sec:
             result += f':{_random.randint(0, 59):02}'
@@ -78,7 +78,7 @@ class Apps:
                     _os.remove(n_spec)
                 if _os.path.exists(path.replace('.py', '.exe')):
                     print(f"App Created Successed in {path.replace('.py', '.exe')}")
-        Other.in_bg(1, mainloop)
+        Other.in_bg('create app loading ...', 1, mainloop)
 class Files:
     def make_if_not_exists(path, type=''):
         """Create a folder (type='') or empty file at path if it doesn't exist."""
@@ -100,8 +100,35 @@ class Files:
             b.write(new_text.replace('\n\n', '\n'))
 class GUI:
     class CustomTk:
+        def change_mode(master, light_icon='light', dark_icon='dark'):
+            def c():
+                if ctk.get_appearance_mode() == 'Dark':
+                    ctk.set_appearance_mode('Light')
+                    button.configure(text=dark_icon)
+                else:
+                    ctk.set_appearance_mode('Dark')
+                    button.configure(text=light_icon)
+            button = ctk.CTkButton(master, text=dark_icon, command=c, font=('arial', 30))
+            return button
+        def in_point(widgets, x, y):
+            return [w for w in widgets if w.winfo_x() == x and w.winfo_y() == y]
+        def limit_len(entry, limit):
+            if entry.cget('textvariable'):
+                check = entry.cget('textvariable')
+            else:
+                check = _ctk.StringVar()
+            def c(*args):
+                if len(entry.get()) > limit:
+                    entry.delete(len(entry.get())-1)
+            entry.configure(textvariable=check)
+            check.trace_add('write', c)
+        def disable_button(button):
+            button.configure(fg_color='#e1e3e1', text_color='white', command=None, hover=False)
         def sync_entry_with_label(entry, label):
-            var = ctk.StringVar()
+            if entry.cget('textvariable'):
+                var = entry.cget('textvariable')
+            else:
+                var = _ctk.StringVar()
             var.trace_add('write', lambda *args:label.configure(text=entry.get()))
             entry.configure(textvariable=var)
         def console(master, texts, per_row=3, entry_to_insert=None, font=('arial', 20), text_color='white', return_dic_frame_and_buttons=False):
@@ -157,15 +184,16 @@ class GUI:
             return btn
         def move(obj):
             master = obj.master
-            master.update_idletasks()
-            x = obj.winfo_x()
-            y = obj.winfo_y()
-            obj.pack_forget()
-            obj.grid_forget()
-            obj.place(x=x, y=y)
-            width = obj.winfo_width()
-            height = obj.winfo_height()
-            obj.bind('<B1-Motion>', lambda e:obj.place(x=master.winfo_pointerx()-width//2, y=master.winfo_pointery()-height//2))
+            def m():
+                x = obj.winfo_x()
+                y = obj.winfo_y()
+                obj.pack_forget()
+                obj.grid_forget()
+                obj.place(x=x, y=y)
+                width = obj.winfo_width()
+                height = obj.winfo_height()
+                master.after(1000, lambda: obj.bind('<B1-Motion>', lambda e:obj.place(x=master.winfo_pointerx()-width//2, y=master.winfo_pointery()-height//2)))
+            master.after(200, m)
         def good_size(widgets):
             """resize widgets with the biggest size (height, width)"""
             def m():
@@ -175,11 +203,11 @@ class GUI:
                     i.configure(width=max(width), height=max(height))
             Other.in_bg('good size', 0, m)
         def tidy_up(widgets, per_row, start_from_row=0, start_from_column=0, distance_down=5, distance_across=5):
+            master = widgets[0].master
             def m():
                 """
                 Arrange widgets in a grid with a fixed number per row.
                 """
-                master = widgets[0].master
                 for i in range(start_from_row+1):
                     master.grid_rowconfigure(i, minsize=widgets[0].winfo_reqheight())
                 for i in range(start_from_column+1):
@@ -195,7 +223,7 @@ class GUI:
                     if allowed_num in multy:
                         rows += 1
                         columns = start_from_column
-            Other.in_bg('tidy up func', len(widgets) // 1000, m)
+            master.after(len(widgets) // 1000, m)
         def all_objects(master):
             """Return a flat list of all child widgets in master."""
             result = []
@@ -236,9 +264,9 @@ class GUI:
                     if a.isdigit():
                         entry.delete(0, 'end')
                         if e.delta >= 1:
-                            entry.insert(0, (b.index(int(a)) + 1) % len(b))
+                            entry.insert(0, Iterable.get_circular_index(b, (b.index(int(a)) + 1), True))
                         else:
-                            entry.insert(0, (b.index(int(a)) - 1) % len(b))
+                            entry.insert(0, Iterable.get_circular_index(b, (b.index(int(a)) - 1), True))
                 entry.bind("<MouseWheel>", f)
             except Exception as e:
                 pass
@@ -335,24 +363,21 @@ class Iterable:
             return iterable[i]
         else:
             return i
-    def any_is_class(iterable, clas, first_object_only=True):
+    def any_is_class(iterable, clas, type=list, first_obj_only=True):
         """
     Check for objects of a specific class in an iterable.
 
     Returns the first match if first_object_only is True (default). 
     Otherwise, returns a set of all matches for O(1) membership testing.
     """
-        if first_object_only:
-            for i in iterable:
-                if isinstance(i, clas):
+        result = []
+        for i in iterable:
+            if isinstance(i, clas):
+                if first_obj_only:
                     return i
-            return []
-        else:
-            result = set()
-            for i in iterable:
-                if isinstance(i, clas):
-                    result.add(i)
-            return result if result else []
+                else:
+                    result.append(i)
+        return type(result) if result else []
     def numred(iterable):
         """numred the objects in an iterable ex: if you want to create numred tasks
             numred(['visiting my uncle', 'water the plants'])  1.visiting my uncle"""
