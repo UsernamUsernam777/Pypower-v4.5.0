@@ -1,6 +1,7 @@
 # pypower (New Version)
 Note: this lib is updated everytime
-
+a useful lib for:
+string, gui, apps, files, math, iterables, 
 
 ## 🛡️ License & Legal Protection
 This project is protected by the **Creative Commons BY-NC-SA 4.0** license.
@@ -9,9 +10,8 @@ This project is protected by the **Creative Commons BY-NC-SA 4.0** license.
 - 👤 **Author:** Mohammed (UsernamUsernam777)
 - 📅 **First Published:** 2026 (Check GitHub History for original timestamp evidence).
 
+example:
 A calculator in few lines!
-moving buttons with mouse.
-Note: this code uses simpleeval
 ```
 import customtkinter as ctk
 import pypower, time
