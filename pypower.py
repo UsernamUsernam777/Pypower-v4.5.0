@@ -286,9 +286,9 @@ class GUI:
                     if a.isdigit():
                         entry.delete(0, 'end')
                         if e.delta >= 1:
-                            entry.insert(0, Iterable.get_circular_index(b, (b.index(int(a)) + 1), True))
+                            entry.insert(0, (a + 1) % len(b))
                         else:
-                            entry.insert(0, Iterable.get_circular_index(b, (b.index(int(a)) - 1), True))
+                            entry.insert(0, (a - 1) % len(b), True))
                 entry.bind("<MouseWheel>", f)
             except Exception as e:
                 pass
@@ -366,17 +366,6 @@ class Iterable:
                 if str(search_with) in str(o):
                     result.append(o)
         return result
-    def get_circular_index(iterable, index, return_obj=False):
-        """
-    Return the element at 'index' using modulo to wrap around if index >= len(iterable).
-    This creates a circular loop, preventing IndexError and allowing infinite cycling.
-    Example: get_circular_index(['a', 'b'], 2) -> 'a'
-    """
-        i = index % len(iterable)
-        if return_obj:
-            return iterable[i]
-        else:
-            return i
     def any_is_class(iterable, clas, type=list, first_obj_only=True):
         """
     Check for objects of a specific class in an iterable.
