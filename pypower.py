@@ -174,8 +174,6 @@ class GUI:
                 self.stop_icon = stop_icon
                 self.timers = 0
                 self.when_finish = when_finish
-                if self.when_finish and self.duration == 0:
-                    self.when_finish()
             def start(self):
                 self.button.configure(command=self.stop, text=self.stop_icon)
                 def m():
@@ -183,6 +181,10 @@ class GUI:
                         self.duration -= 1
                         self.obj.configure(text=Time.how_many_hms_in_s(self.duration))
                         _time.sleep(1)
+                        if self.when_finish and self.duration == 0:
+                            self.button.configure(text=self.start_icon)
+                            self.when_finish()
+                            break
                 Other.in_bg(f'{id(self.obj)}', 0, m)
             def stop(self):
                 self.button.configure(command=self.resume_timer, text=self.start_icon)
