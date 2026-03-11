@@ -277,21 +277,20 @@ class GUI:
                 inf.after(1000, lambda: inf.place(x=x, y=y+widget.winfo_height()))
                 inf.after(hide_after*1000, inf.place_forget)
             widget.bind('<Enter>', show)
-        def mouse_wheel_num(entry, start, end):
+        def mouse_wheel_num(entry, end, step=1):
             """Scroll through numbers in range [start, end] inside an entry with the mouse wheel."""
-            try:
-                def f(e):
-                    a = entry.get()
-                    b = range(start, end+1)
-                    if a.isdigit():
-                        entry.delete(0, 'end')
-                        if e.delta >= 1:
-                            entry.insert(0, (a + 1) % len(b))
-                        else:
-                            entry.insert(0, (a - 1) % len(b), True))
-                entry.bind("<MouseWheel>", f)
-            except Exception as e:
-                pass
+            def f(e):
+                if Math.int_or_float(entry.get()):
+                    a = float(entry.get())
+                    entry.delete(0, 'end')
+                    if e.delta >= 1:
+                        new_num = type(step)(a + step)
+                    else:
+                        new_num = type(step)(a - step)
+                    if a == end:
+                        new_num = 0
+                    entry.insert(0, round(new_num, 2))
+            entry.bind("<MouseWheel>", f)
     class Turtle:
         def in_circle(turtle_obj, shape_as_func, how_many=10):
             """draw shape_as_func in circle"""
@@ -424,8 +423,9 @@ result = ['Olivia', 'mark']"""
 class Math:
     def int_or_float(num):
         try:
+            num = str(num).strip()
             float(num)
-            assert str(num)[-1] != '.'
+            assert num[-1] != '.'
             return True
         except:
             return False
