@@ -2,6 +2,7 @@
 Note: this lib is updated everytime
 a useful lib for:
 string, gui, apps, files, math, iterables, time, other things
+
 you can install with pip: pip install pypower-v4==4.4.0
 ## 🛡️ License & Legal Protection
 This project is protected by the **Creative Commons BY-NC-SA 4.0** license.
