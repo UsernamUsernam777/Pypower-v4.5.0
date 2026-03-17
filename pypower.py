@@ -18,6 +18,7 @@ class Time:
         if with_sec:
             result += f':{_random.randint(0, 59):02}'
         return result
+    @staticmethod
     def minus_clock(time_str1, time_str2):
         t1 = Time.reverse_many_hms(time_str1)
         t2 = Time.reverse_many_hms(time_str2)
@@ -32,6 +33,7 @@ class Time:
         minutes = (sec % 3600) // 60
         seconds = (sec % 3600) % 60
         return f"{hours:02}:{minutes:02}:{seconds:02}"
+    @staticmethod
     def reverse_many_hms(time_str):
         result = Time.convert_to_iterable_and_int(time_str)
         return (result[0]*3600) + (result[1]*60) + result[2]
@@ -39,11 +41,12 @@ class Other:
     @staticmethod
     def copy_pypower(path):
         """Copy the contents of pypower.py to the clipboard."""
-        with open(path, 'r', encoding='utf-8') as f:
-            _pyperclip.copy(f.read())
+        _pyperclip.copy(Files.read_write_txt_file(path))
+    @staticmethod
     def search_google(text):
         """Open a new browser tab with a Google search for text."""
         _webbrowser.open_new_tab(f"https://www.google.com/search?q={text}&oq=&gs_lcrp=EgZjaHJvbWUqCQgAECMYJxjqAjIJCAAQIxgnGOoCMgkIARAjGCcY6gIyCQgCEEUYOxjCAzIRCAMQABgDGEIYjwEYtAIY6gIyDwgEEC4YAxiPARi0AhjqAjIRCAUQABgDGEIYjwEYtAIY6gIyEQgGEAAYAxhCGI8BGLQCGOoCMg8IBxAuGAMYjwEYtAIY6gLSAQg0MDVqMGoxNagCCLACAfEF1j7Fc7lEloM&sourceid=chrome&ie=UTF-8")
+    @staticmethod
     def in_bg(name, duration, action=None):
         """Run action in a background thread after duration seconds.
 don't write repeated name."""
@@ -97,6 +100,7 @@ class Files:
         else:
             with open(file_txt, 'w', encoding='utf-8') as f:
                 f.write(text or '')
+    @staticmethod
     def make_if_not_exists(path, type=''):
         """Create a folder (type='') or empty file at path if it doesn't exist."""
         if not _os.path.exists(path):
@@ -110,8 +114,7 @@ class Files:
         Files.append_to_file(path, f'\n#{class_name}\n'+code)
     def append_to_file(path, text, side='bottom'):
         """Append text to a file removing double blank lines."""
-        with open(path, 'r', encoding='utf-8') as a:
-            old_text = a.read()
+        old_text = Files.read_write_txt_file(path)
         with open(path, 'w', encoding='utf-8') as b:
             if side == 'top':
                 new_text = text + '\n' + old_text
@@ -121,25 +124,45 @@ class Files:
 class GUI:
     @staticmethod
     class CustomTk:
+        def duplicate_double_click(obj):
+            new = GUI.CustomTk.clone_widget(obj)
+            def alls(e):
+                obj.after(300, lambda:new.place(x=obj.winfo_x(), y=obj.winfo_y()+obj.winfo_height()))
+                duplicate(new)
+            obj.bind('<Double-Button-1>', alls)
+        def clone_widget(old_widget):
+            new = old_widget.__class__(old_widget.master)
+            attr = old_widget.__dict__
+            for i in attr:
+                try:
+                    if i[0] == '_':
+                        new_config = {i[1:]: attr[i]}
+                    else:
+                        new_config = {i: attr[i]}
+                    new.configure(**new_config)
+                except:
+                    pass
+            return new
         def add_texts_to_file(master, file, sep='\n'):
             Files.make_if_not_exists(file, 'txt')
             Files.read_write_txt_file(file, 'write', '')
-            for i in GUI.CustomTk.has_text(GUI.CustomTk.all_objects(master), return_dic_widget_texts=True)['texts']:
+            for i in GUI.CustomTk.has_text_iterable(GUI.CustomTk.all_objects(master), return_dic_widget_texts=True)['texts']:
                 Files.append_to_file(file, i+sep)
-        def has_text(iterable, with_empty=False, return_dic_widget_texts=False):
+        def has_text(obj, with_empty=False):
+            try:
+                obj.cget('text')
+                if with_empty:
+                    assert obj.cget('text').strip()
+                return True
+            except:
+                return False
+        def has_text_iterable(iterable, with_empty=False, text_obj=False):
             result = []
             for i in iterable:
-                try:
-                    if not with_empty:
-                        if i.cget('text').strip():
-                            result.append(i)
-                    else:
-                        result.append(i)
-                except:
-                    pass
-            if return_dic_widget_texts:
-                return {'texts': [i.cget('text') for i in result], 'widgets': result}
-            return result
+                if GUI.CustomTk.has_text(i, with_empty):
+                    result.append(i)
+            if text_obj:
+                return {'texts': [t.cget('text') for t in result], 'widgets': result}
         def double_clk_copy_label(label):
             def co(e):
                 _pyperclip.copy(label.cget('text'))
@@ -170,8 +193,6 @@ class GUI:
                     button.configure(text=light_icon)
             button = _ctk.CTkButton(master, text=dark_icon, command=c, font=('arial', 30))
             return button
-        def in_point(widgets, x, y):
-            return [w for w in widgets if w.winfo_x() == x and w.winfo_y() == y]
         def limit_len(entry, limit):
             if entry.cget('textvariable'):
                 check = entry.cget('textvariable')
@@ -244,7 +265,7 @@ class GUI:
                     btn.configure(text=show_ico)
             btn.configure(command=change)
             return btn
-        def move(obj):
+        def move(obj, action_when_move=None):
             master = obj.master
             def m(e):
                 x = obj.winfo_x()
@@ -257,6 +278,8 @@ class GUI:
                 mouse_x = master.winfo_pointerx() - master.winfo_rootx() - width//2
                 mouse_y = master.winfo_pointery() - master.winfo_rooty() - height//2
                 obj.place(x=mouse_x, y=mouse_y)
+                if action_when_move:
+                    action_when_move()
             obj.bind('<B1-Motion>', m)
         def good_size(widgets):
             """resize widgets with the biggest size (height, width)"""
@@ -265,7 +288,7 @@ class GUI:
                 height = [i.winfo_reqheight() for i in widgets]
                 for i in widgets:
                     i.configure(width=max(width), height=max(height))
-            Other.in_bg('good size', 0, m)
+            widgets.master.after(len(widgets) // 1000, m)
         def tidy_up(widgets, per_row, start_row=0, start_column=0, padx=5, pady=5):
             master = widgets[0].master
             def m():
@@ -305,7 +328,7 @@ class GUI:
                         i.configure(font=(font, size), text_color=text_color, fg_color=bg)    
                     else:
                         i.configure(font=(font, size), text_color=text_color, fg_color='transparent')
-            Other.in_bg('edit_all_texts', 0.5, m)
+            iterable[0].master.after(len(iterable) // 1000, m)
         def info(widget, information, font='arial', size=20, bg='', hide_after=5):
             """Show a tooltip label below widget on hover, auto-hide after hide_after seconds."""
             if bg:
@@ -409,6 +432,7 @@ class Iterable:
                 if str(search_with) in str(o):
                     result.append(o)
         return result
+    @staticmethod
     def numred(iterable):
         """numred the objects in an iterable ex: if you want to create numred tasks
             numred(['visiting my uncle', 'water the plants'])  1.visiting my uncle"""
@@ -416,8 +440,10 @@ class Iterable:
         for i in range(len(iterable)):
             result += f"{i+1}. {iterable[i]}\n"
         return result.strip()
+    @staticmethod
     def indexes(iterable, obj):
         return [i for i in range(len(iterable)) if iterable[i] == obj]
+    @staticmethod
     def replace_iterable(iterable, index, new_obj=None):
         """replace an object by it's index with new_obj ex:    replace(['mike', 'mark'], 1, 'Olivia')
 result = ['Olivia', 'mark']"""
@@ -427,9 +453,11 @@ result = ['Olivia', 'mark']"""
         else:
             co.remove(co[index-1])
         return co
+    @staticmethod
     def all_in(main_iterable, iterable):
         """Checks if all unique elements of 'iterable' exist within 'main_iterable'."""
         return set(iterable).issubset(set(main_iterable))
+    @staticmethod
     class Dict:
         def swap_dict(dic):
             """k: v ➡ v, k"""
@@ -458,6 +486,7 @@ class Math:
     def iter_num(iterable):
         """Return sum, average, max, and min of an iterable as a dict."""
         return {'sum': sum(iterable), 'average': sum(iterable) / len(iterable), 'max': max(iterable), 'min': min(iterable)}
+    @staticmethod
     def arrays(array, step, show='lists'):
         """Split a range into consecutive [start, end] pairs by step.
         If show != 'lists', return a formatted string instead."""
