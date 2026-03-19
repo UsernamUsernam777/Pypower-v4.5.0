@@ -95,7 +95,9 @@ class Apps:
         Other.in_bg('create app loading ...', 1, mainloop)
 class Files:
     @staticmethod
-    def read_write_txt_file(file_txt, do='read', text=None):
+    def read_write_txt_file(file_txt, do='read', text=None, create_if_no=True):
+        if create_if_no:
+            Files.make_if_not_exists(file_txt, 'txt')
         if do == 'read':
             with open(file_txt, 'r', encoding='utf-8') as f:
                 return f.read().strip()
@@ -128,35 +130,83 @@ class Files:
 class GUI:
     @staticmethod
     class CustomTk:
-        def sort_colors(widgets, per_row_color):
+        def entry_label(obj):
+            is_label = isinstance(obj, _ctk.CTkLabel)
+            event = "<Shift-Double-Button-1>" if is_label else "<Return>"
+            atts = ['fg_color', 'text_color', 'font']
+            if obj.cget('fg_color') == 'transparent':
+                atts.remove('fg_color')
+            attributes = {i: obj.cget(i) for i in atts}
+            def convert(e):
+                if is_label:
+                    a = _ctk.CTkEntry(obj.master)
+                else:
+                    a = _ctk.CTkLabel(obj.master)
+                a.configure(**attributes)
+                a.configure(corner_radius=obj.cget('corner_radius')+1)
+                def m():
+                    x = obj.winfo_x()
+                    y = obj.winfo_y()
+                    a.insert(0, obj.cget('text')) if is_label else a.configure(text=obj.get())
+                    a.place(x=x, y=y)
+                    obj.destroy()
+                GUI.CustomTk.entry_label(a)
+                obj.after(200, m)
+            obj.bind(event, convert)
+        def options(widget, names, commands, font=('arial', 10), text_color='white'):
+            a = ctk.CTkFrame(widget.master)
+            from itertools import zip_longest
+            for i, e in zip_longest(names, commands):
+                l = ctk.CTkButton(a, text=i, text_color=text_color, font=font, width=len(i)+50, height=font[1])
+                l.pack()
+                l.configure(command=e)
+            def show(e):
+                def m():
+                    a.lift()
+                    a.place(x=widget.winfo_x()+1, y=widget.winfo_y()+widget.winfo_height())
+                widget.after(200, m)
+            widget.bind("<Button-3>", show)
+            widget.master.bind("<Button-1>", lambda e:a.place_forget())
+        def sort_colors(widgets, per_row_color, color_of='fg_color'):
             b = 0
-            colors = set([w.cget('fg_color') for w in widgets])
+            colors = set([w.cget(color_of) for w in widgets])
             wids = []
             for i in colors:
                 new = []
                 for o in widgets:
-                    if o.cget('fg_color') == i:
+                    if o.cget(color_of) == i:
                         new.append(o)
                 wids.append(new)
             for i in wids:
                 GUI.CustomTk.tidy_up(i, per_row_color, start_column=b)
                 b += per_row_color
-        def table(master, dic_data, font=('arial', 30), text_color='black', return_widgets_frame=False):
+        def table(master, dic_data, font=('arial', 30), text_color='black', buttons=False, widgets_frame=False, autofit=False):
             a = _ctk.CTkScrollableFrame(master)
             b = 0
-            if return_widgets_frame:
-                allss = []
+            widgets = []
             for i in dic_data:
-                alls = []
-                alls.append(_ctk.CTkLabel(a, text=i, font=font, text_color=text_color))
-                for o in dic_data[i]:
-                    alls.append(_ctk.CTkLabel(a, text=str(o), font=font, text_color=text_color))
-                GUI.CustomTk.tidy_up(alls, 1, start_column=b)
+                column = []
+                if buttons:
+                    obj = _ctk.CTkButton(a, text=str(i), font=font, text_color=text_color)
+                else:
+                    obj = _ctk.CTkLabel(a, text=str(i), font=font, text_color=text_color)
+                column.append(obj)
+                if widgets_frame or autofit:
+                    widgets.append(obj)
+                for v in dic_data[i]:
+                    if buttons:
+                        obj = _ctk.CTkButton(a, text=str(v), font=font, text_color=text_color)
+                    else:
+                        obj = _ctk.CTkLabel(a, text=str(v), font=font, text_color=text_color)
+                    column.append(obj)
+                    if widgets_frame or autofit:
+                        widgets.append(obj)
+                GUI.CustomTk.tidy_up(column, per_row=1, start_column=b, padx=7)
                 b += 1
-                if return_widgets_frame:
-                    allss.append(alls)
-            if return_widgets_frame:
-                return {'widgets':allss, 'frame': a}
+            if autofit:
+                GUI.CustomTk.good_size(widgets)
+            if widgets_frame:
+                return {'widgets': widgets, 'frame': a}
             return a
         def duplicate_double_click(obj, move=False):
             def alls(e):
@@ -180,11 +230,9 @@ class GUI:
                 except:
                     pass
             return new
-        def add_texts_to_file(master, file, sep='\n'):
+        def add_texts_to_file(master, file, title):
             Files.make_if_not_exists(file, 'txt')
-            Files.read_write_txt_file(file, 'write', '')
-            for i in GUI.CustomTk.has_text_iterable(GUI.CustomTk.all_objects(master), return_dic_widget_texts=True)['texts']:
-                Files.append_to_file(file, i+sep)
+            Files.append_to_file(file, title + str(GUI.CustomTk.has_text_iterable(GUI.CustomTk.all_objects(master), text_obj=True)['texts']))
         def has_text(obj, with_empty=False):
             try:
                 obj.cget('text')
@@ -200,15 +248,7 @@ class GUI:
                     result.append(i)
             if text_obj:
                 return {'texts': [t.cget('text') for t in result], 'widgets': result}
-        def double_clk_copy_label(label):
-            def co(e):
-                _pyperclip.copy(label.cget('text'))
-                def place():
-                    x = label.winfo_x() - label.winfo_width() // 2
-                    y = label.winfo_y() + label.winfo_height()
-                    GUI.CustomTk.show_hide_message(label.master, 'Copied!', text_color='green', x=x, y=y)
-                label.after(200, place)
-            label.bind('<Double-Button-1>', co)
+            return result
         def show_hide_message(master, message, text_color='red', font=('arial', 30), x=None, y=None, hide_after=1, in_btn=False):    
             if in_btn:
                 a = _ctk.CTkButton(master, text=message, font=font, text_color=text_color, hover=False, )
@@ -326,7 +366,7 @@ class GUI:
                 height = [i.winfo_reqheight() for i in widgets]
                 for i in widgets:
                     i.configure(width=max(width), height=max(height))
-            widgets.master.after(len(widgets) // 1000, m)
+            widgets[0].master.after(500, m)
         def tidy_up(widgets, per_row, start_row=0, start_column=0, padx=5, pady=5):
             master = widgets[0].master
             def m():
@@ -444,21 +484,30 @@ class String:
         return result
     def replace_many(self, old_iterable, new_iterable):
         """Replace each character in old_iterable with the matching one in new_iterable."""
-        result = ''
-        for i in self.text:
-            if i in old_iterable:
-                result += new_iterable[old_iterable.index(i)]
-            else:
-                result += i
-        return result
-    def between(self, c1, c2):
+        for i, e in zip(old_iterable, new_iterable):
+            self.text = self.text.replace(i, e)
+        return self.text
+    def between(self, c1, c2, first=True, last=True):
         """return string between two points"""
         result = []
         index = [Iterable.indexes(self.text, c1), Iterable.indexes(self.text, c2)]
         for i, e in zip(index[0], index[1]):
-            result.append(self.text[i:e+1])
+            if not first:
+                i += 1
+            if last:
+                e += 1
+            result.append(self.text[i:e])
         return result
 class Iterable:
+    @staticmethod
+    def flat_list(lst, type_to_flat=(list, set)):
+        result = []
+        for i in lst:
+            if isinstance(i, type_to_flat):
+                result.extend(Iterable.flat_list(list(i)))
+            else:
+                result.append(i)
+        return result
     @staticmethod
     def search_iterable(iterable, search_with, ignore_case=True):
         result = []
