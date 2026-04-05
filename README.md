@@ -15,19 +15,3 @@ Math & Numbers: Reliable functions for numeric validation (int/float check) and 
 Time Operations: Precision tools for converting seconds to standard formats and calculating absolute differences between time strings.
 
 System Automation: Fully automated script-to-executable (EXE) conversion with integrated build cleanup.
-
-This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
-
-You are free to:
-
-Share: Copy and redistribute the material in any medium or format.
-
-Adapt: Remix, transform, and build upon the material.
-
-Under the following terms:
-
-Attribution: You must give appropriate credit (Mohammed - UsernamUsernam777) and provide a link to the original repository.
-
-NonCommercial: You may NOT use the material for commercial purposes (Selling the code or using it in paid software is strictly prohibited).
-
-ShareAlike: If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original.
