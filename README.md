@@ -1,5 +1,6 @@
 Target Audience:
 This library is specifically crafted for Python developers, automation enthusiasts, and data researchers who need to build high-quality interactive tools without the complexity of standard low-level frameworks.
+
 What it does:
 Provides a simplified layer for building modern, responsive desktop applications.
 Automates UI session management by remembering and restoring widget layouts and locations.
